@@ -72,6 +72,28 @@ def obj_to_tbl(pyObj, outTbl, delimiter=None, wIndex=None,
         
         writer.save()
     
+    elif ff == '.dbf':
+        import numpy as np
+        import pandas
+        import pysal
+        
+        type2spec = {int: ('N', 20, 0),
+            np.int64: ('N', 20, 0),
+            float: ('N', 36, 15),
+            np.float64: ('N', 36, 15),
+            str: ('C', 14, 0),
+            unicode: ('C', 14, 0)
+        }
+        
+        types = [type(pyObj[i].iloc[0]) for i in pyObj.columns]
+        specs = [type2spec[t] for t in types]
+        
+        with pysal.open(outTbl, 'w') as db:
+            db.header = list(df.columns)
+            db.field_spec = specs
+            for i, row in df.T.iteritems():
+                db.write(row)
+    
     else:
         raise ValueError('{} is not a valid table format!'.format(ff))
     

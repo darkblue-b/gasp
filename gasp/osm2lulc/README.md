@@ -4,7 +4,7 @@ OSM2LULC Documentation
 OSM2LULC sub-package is based on a chain of logical procedures for the derivation of Land Use/Land Cover (LULC) maps from OpenStreetMap (OSM) data. OSM2LULC may be used to convert a file with raw OSM data into a LULC layer with one of the following nomenclatures:
 - Urban Atlas (level 2);
 - Corine Land Cover (level 2);
-- Globe Land 30 (level 2).
+- Globe Land 30.
 
 Currently, OSM2LULC has 4 versions:
 - Version 1.1 (produce LULC map using only vector data; obsolete);
@@ -14,7 +14,7 @@ Currently, OSM2LULC has 4 versions:
 
 All developed versions implement the same logic rules to convert OSM to LULC. The differences between them are only procedural relating:
 - each version uses tools from different GIS Software;
-- result aggreation into a single layer is done differently from version to version.
+- results aggregation into a single layer is done differently from version to version.
 
 [osm2lulc.ipynb](/gasp/osm2lulc/osm2lulc.ipynb) shows how different versions can be used!
 
@@ -89,7 +89,7 @@ Version 1.3 and 1.4:
 
 Again, in Versions 1.3 and 1.4, the aggregation task with v.dissolve is overridden by the conversion to raster (v.to.rast in V 1.3; GDAL Python Bindings are used in V 1.4).
 
-##### Priority RULE Workflow: #####
+##### Agregation of results from each Module - Priority RULE Workflow: #####
 
 Version 1.1 and 1.2:
 

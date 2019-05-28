@@ -3,40 +3,91 @@ Methods to extract OSM data from the internet
 """
 
 
-def download_by_boundary(input_boundary, output_osm, epsg, area_threshold=None,
+def download_by_boundary(input_boundary, output_osm, epsg,
                          GetUrl=True):
     """
     Download data from OSM using a bounding box
     """
     
     import os
-    from decimal        import Decimal
-    from gasp.prop.feat import feat_count
-    from gasp.prop.ext  import get_extent
-    from gasp.web       import get_file
+    from osgeo    import ogr
+    from gasp.web import get_file
+    from gasp.oss import get_fileformat, get_filename
     
-    # Check number of features
-    number_feat = feat_count(input_boundary)
-    if number_feat != 1:
-        raise ValueError((
-            'Your boundary has more than one feature. '
-            'Only feature classes with one feature are allowed.'
-        ))
-    
-    # Check boundary area
-    if area_threshold:
-        from gasp.cpu.gdl import area_to_dic
-        d_area = area_to_dic(input_boundary)
-        if d_area[0] > area_threshold:
-            raise ValueError(
-                '{} has more than than {} square meters'.format(
-                    os.path.basename(input_boundary),
-                    str(area_threshold)
-                )
+    if type(input_boundary) == dict:
+        if 'top' in input_boundary and 'bottom' in input_boundary \
+            and 'left' in input_boundary and 'right' in input_boundary:
+            
+            left, right, bottom, top = (
+                input_boundary['left'], input_boundary['right'],
+                input_boundary['bottom'], input_boundary['top']
             )
+        
+        else:
+            raise ValueError((
+                'input_boundary is a dict but the keys are not correct. '
+                'Please use left, right, top and bottom as keys'
+            ))
     
-    # Get boundary extent
-    left, right, bottom, top = get_extent(input_boundary, gisApi='ogr')
+    elif type(input_boundary) == list:
+        if len(input_boundary) == 4:
+            left, right, bottom, top = input_boundary
+        
+        else:
+            raise ValueError((
+                'input boundary is a list with more than 4 objects. '
+                'The list should be like: '
+                'l = [left, right, bottom, top]'
+            ))
+    
+    elif type(input_boundary) == ogr.Geometry:
+        # Check if we have a polygon
+        geom_name = input_boundary.GetGeometryName()
+        
+        if geom_name == 'POLYGON' or geom_name == 'MULTIPOLYGON':
+            # Get polygon extent
+            left, right, bottom, top = input_boundary.GetEnvelope()
+        
+        else:
+            raise ValueError((
+                'Your boundary is a non POLYGON ogr Geometry '
+            ))
+    
+    else:
+        # Assuming input boundary is a file
+        
+        #Check if file exists
+        if not os.path.exists(input_boundary):
+            raise ValueError((
+                "Sorry, but the file {} does not exist inside the folder {}!"
+            ).format(
+                os.path.basename(input_boundary), os.path.dirname(input_boundary)
+            ))
+        
+        # Check if is a raster
+        from gasp.prop.ff import check_isRaster
+        isRst = check_isRaster(input_boundary)
+        
+        if isRst:
+            from gasp.prop.ext import rst_ext
+            
+            # Get raster extent
+            left, right, bottom, top = rst_ext(input_boundary)
+        
+        else:
+            from gasp.prop.feat import feat_count
+            from gasp.prop.ext  import get_extent
+        
+            # Check number of features
+            number_feat = feat_count(input_boundary, gisApi='ogr')
+            if number_feat != 1:
+                raise ValueError((
+                    'Your boundary has more than one feature. '
+                    'Only feature classes with one feature are allowed.'
+                ))
+    
+            # Get boundary extent
+            left, right, bottom, top = get_extent(input_boundary, gisApi='ogr')
     
     if epsg != 4326:
         from gasp.to.geom import create_point
@@ -55,40 +106,19 @@ def download_by_boundary(input_boundary, output_osm, epsg, area_threshold=None,
     
     bbox_str = ','.join([str(left), str(bottom), str(right), str(top)])
     
-    url = "http://overpass-api.de/api/map?bbox={box}".format(box=bbox_str)
+    url = "https://overpass-api.de/api/map?bbox={box}".format(box=bbox_str)
     
     if GetUrl:
         return url
     
+    if get_fileformat(output_osm) != '.xml':
+        output_osm = os.path.join(
+            os.path.dirname(output_osm),
+            get_filename(output_osm) + '.xml')
+    
     osm_file = get_file(url, output_osm)
     
     return output_osm
-
-
-def download_by_polygeom(inGeom, outOsm, epsg):
-    """
-    Download data from OSM using extent of a Polygon Object
-    """
-    
-    from gasp.web import get_file
-    
-    # Transform polygon if necessary
-    if epsg != 4326:
-        from gasp.mng.prj import project_geom
-        
-        inGeom = project_geom(inGeom, epsg, 4326, api='ogr')
-    
-    # Get polygon extent
-    left, right, bottom, top = inGeom.GetEnvelope()
-    
-    bbox_str = "{},{},{},{}".format(
-        str(left), str(bottom), str(right), str(top))
-    
-    url = "https://overpass-api.de/api/map?bbox={}".format(bbox_str)
-    
-    osm_file = get_file(url, outOsm)
-    
-    return outOsm
 
 
 def download_by_psqlext(psqlCon, table, geomCol, outfile):

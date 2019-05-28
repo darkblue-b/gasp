@@ -12,21 +12,15 @@ def check_last_id(lnk, pk, table):
     """
     
     from gasp.sql.c import psqlcon
+    from gasp.fm.sql import query_to_df
     
-    con = psqlcon(lnk)
-    cs = con.cursor()
-    cs.execute(
-        "SELECT {fid} FROM {tbl};".format(
-            fid=pk, tbl=table
-        )
-    )
-    f = [x[0] for x in cs.fetchall()]
-    cs.close()
-    con.close()
-    if len(f) == 0:
+    q = "SELECT MAX({}) AS fid FROM {}".format(pk, table)
+    d = query_to_df(lnk, q, db_api='psql').fid.tolist()
+    
+    if not d:
         return 0
     else:
-        return max(f)
+        return d[0]
 
 
 """

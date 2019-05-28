@@ -4,7 +4,7 @@ OSM2LULC using Numpy
 
 
 def osm2lulc(osmdata, nomenclature, refRaster, lulcRst,
-             epsg=3857, overwrite=None, dataStore=None, roadsAPI='SQLITE'):
+             overwrite=None, dataStore=None, roadsAPI='POSTGIS'):
     """
     Convert OSM data into Land Use/Land Cover Information
     
@@ -25,7 +25,8 @@ def osm2lulc(osmdata, nomenclature, refRaster, lulcRst,
     # Dependencies #
     # ************************************************************************ #
     from gasp.fm.rst         import rst_to_array
-    from gasp.prop.rst       import get_cellsize
+    from gasp.prop.ff        import check_isRaster
+    from gasp.prop.rst       import get_cellsize, get_epsg_raster
     from gasp.oss.ops        import create_folder, copy_file
     if roadsAPI == 'POSTGIS':
         from gasp.sql.mng.db     import create_db
@@ -34,7 +35,8 @@ def osm2lulc(osmdata, nomenclature, refRaster, lulcRst,
     else:
         from gasp.osm2lulc.utils import osm_to_sqdb
         from gasp.osm2lulc.mod2  import num_roads
-    from gasp.osm2lulc.utils import osm_project, add_lulc_to_osmfeat
+    from gasp.osm2lulc.utils import osm_project, add_lulc_to_osmfeat, osmlulc_rsttbl
+    from gasp.osm2lulc.utils import get_ref_raster
     from gasp.osm2lulc.mod1  import num_selection
     from gasp.osm2lulc.m3_4  import num_selbyarea
     from gasp.osm2lulc.mod5  import num_base_buffer
@@ -43,16 +45,22 @@ def osm2lulc(osmdata, nomenclature, refRaster, lulcRst,
     # ************************************************************************ #
     # Global Settings #
     # ************************************************************************ #
+    # Check if input parameters exists!
     if not os.path.exists(os.path.dirname(lulcRst)):
         raise ValueError('{} does not exist!'.format(os.path.dirname(lulcRst)))
     
-    conPGSQL = json.load(open(os.path.join(
-        os.path.dirname(os.path.abspath(__file__)),
-        'con-postgresql.json'
-    ), 'r')) if roadsAPI == 'POSTGIS' else None
+    if not os.path.exists(osmdata):
+        raise ValueError('File with OSM DATA ({}) does not exist!'.format(osmdata))
+    
+    if not os.path.exists(refRaster):
+        raise ValueError('File with reference area ({}) does not exist!'.format(refRaster))
+    
+    # Check if Nomenclature is valid
+    nomenclature = "URBAN_ATLAS" if nomenclature != "URBAN_ATLAS" and \
+        nomenclature != "CORINE_LAND_COVER" and \
+        nomenclature == "GLOBE_LAND_30" else nomenclature
     
     time_a = datetime.datetime.now().replace(microsecond=0)
-    from gasp.osm2lulc.var import osmTableData, PRIORITIES
     
     workspace = os.path.join(os.path.dirname(
         lulcRst), 'num_osmto') if not dataStore else dataStore
@@ -66,7 +74,17 @@ def osm2lulc(osmdata, nomenclature, refRaster, lulcRst,
     else:
         create_folder(workspace, overwrite=None)
     
-    CELLSIZE = get_cellsize(refRaster, xy=False, gisApi='gdal')
+    conPGSQL = json.load(open(os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        'con-postgresql.json'
+    ), 'r')) if roadsAPI == 'POSTGIS' else None
+    
+    # Get Ref Raster and EPSG
+    refRaster, epsg = get_ref_raster(refRaster, workspace, cellsize=2)
+    CELLSIZE = get_cellsize(refRaster, gisApi='gdal')
+        
+    from gasp.osm2lulc.var import osmTableData, PRIORITIES
+    
     time_b = datetime.datetime.now().replace(microsecond=0)
     # ************************************************************************ #
     # Convert OSM file to SQLITE DB or to POSTGIS DB #
@@ -302,11 +320,23 @@ def osm2lulc(osmdata, nomenclature, refRaster, lulcRst,
         resultSum = resultSum + arrayRst[lulc_i]
     
     # Save Result
+    outIsRst = check_isRaster(lulcRst)
+    if not outIsRst:
+        from gasp.oss import get_filename
+        
+        lulcRst = os.path.join(
+            os.path.dirname(lulcRst), get_filename(lulcRst) + '.tif'
+        )
+    
     numpy.place(resultSum, resultSum==0, 1)
     array_to_raster(
         resultSum, lulcRst, refRaster, epsg, gdal.GDT_Byte, noData=1,
         gisApi='gdal'
     )
+    
+    osmlulc_rsttbl(nomenclature + "_NUMPY", os.path.join(
+        os.path.dirname(lulcRst), os.path.basename(lulcRst) + '.vat.dbf'
+    ))
     
     time_q = datetime.datetime.now().replace(microsecond=0)
     

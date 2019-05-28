@@ -108,10 +108,15 @@ def row_num(conObj, table, where=None, api='psql'):
     
     from gasp.fm.sql import query_to_df
     
-    d = query_to_df(conObj, "SELECT COUNT(*) AS nrows FROM {}{}".format(
-        table,
-        "" if not where else " WHERE {}".format(where)
-    ), db_api=api)
+    if not table.startswith('SELECT '):
+        Q = "SELECT COUNT(*) AS nrows FROM {}{}".format(
+            table,
+            "" if not where else " WHERE {}".format(where)
+        )
+    else:
+        Q = "SELECT COUNT(*) AS nrows FROM ({}) AS foo".format(table)
+    
+    d = query_to_df(conObj, Q, db_api=api)
     
     return int(d.iloc[0].nrows)
 
@@ -237,7 +242,7 @@ def del_tables(lnk, pg_table_s, isViews=None):
     
     for lt in l:
         cursor = con.cursor()
-        cursor.execute('DROP {} {};'.format(
+        cursor.execute('DROP {} IF EXISTS {};'.format(
             'TABLE' if not isViews else 'VIEW', ', '.join(lt)))
         con.commit()
         cursor.close()

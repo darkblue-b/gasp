@@ -1,3 +1,0 @@
-"""
-Produce layouts using ArcPy
-"""

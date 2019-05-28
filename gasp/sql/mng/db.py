@@ -156,66 +156,54 @@ def dump_db(conPSQL, outSQL):
 Copy data from one Database to another
 """
 
-def copy_fromdb_todb(conFromDb, conToDb, tables, qForTbl=None):
+def copy_fromdb_todb(conFromDb, conToDb, tables, qForTbl=None, api='pandas'):
     """
     Send PGSQL Tables from one database to other
     """
     
-    import pandas
     from gasp             import goToList
-    from gasp.fm.sql      import query_to_df
-    from gasp.sql.mng.fld import cols_name
-    from gasp.to.sql      import df_to_db
+    
+    api = 'pandas' if api != 'pandas' and api != 'psql' else api
     
     tables = goToList(tables)
     
-    for table in tables:
-        cols = cols_name(conFromDb, table)
+    if api == 'pandas':
+        from gasp.fm.sql import query_to_df
+        from gasp.to.sql import df_to_db
+    
+        for table in tables:
+            if not qForTbl:
+                tblDf = query_to_df(conFromDb, "SELECT * FROM {}".format(
+                    table), db_api='psql')
         
-        if not qForTbl:
-            tblDf = query_to_df(conFromDb, "SELECT {} FROM {}".format(
-                ", ".join(cols), table), db_api='psql'
-            )
-        
-        else:
-            if table not in qForTbl:
-                tblDf = query_to_df(conFromDb, "SELECT {} FROM {}".format(
-                    ", ".join(cols), table
-                ), db_api='psql')
-            
             else:
-                tblDf = query_to_df(conFromDb, qForTbl[table], db_api='psql')
+                if table not in qForTbl:
+                    tblDf = query_to_df(conFromDb, "SELECT * FROM {}".format(
+                        table), db_api='psql')
+            
+                else:
+                    tblDf = query_to_df(conFromDb, qForTbl[table], db_api='psql')
         
-        df_to_db(conToDb, tblDf, table, api='psql')
-
-
-def copy_fromdb_todb2(conFrom, conTo, tables):
-    """
-    Send PGSQL Tables from one database to another using
-    pg_dump and pg_restore
-    """
+            df_to_db(conToDb, tblDf, table, api='psql')
     
-    import os
-    from gasp             import goToList
-    from gasp.oss.ops     import create_folder, del_folder
-    from gasp.sql.mng.tbl import dump_table
-    from gasp.sql.mng.tbl import restore_table
-    
-    tmpFolder = create_folder(
-        os.path.dirname(os.path.abspath(__file__)), randName=True
-    )
-    
-    tables = goToList(tables)
-    
-    for table in tables:
-        # Dump
-        sqlScript = dump_table(
-            conFrom, table,
-            os.path.join(tmpFolder, table + ".sql")
+    else:
+        import os
+        from gasp.oss.ops     import create_folder, del_folder
+        from gasp.sql.mng.tbl import dump_table
+        from gasp.sql.mng.tbl import restore_table
+        
+        tmpFolder = create_folder(
+            os.path.dirname(os.path.abspath(__file__)), randName=True
         )
         
-        # Restore
-        tblname = restore_table(conTo, sqlScript, table)
-    
-    del_folder(tmpFolder)
+        for table in tables:
+            # Dump 
+            sqlScript = dump_table(conFromDb, table, os.path.join(
+                tmpFolder, table + ".sql"
+            ))
+            
+            # Restore
+            tblname = restore_table(conToDb, sqlScript, table)
+        
+        del_folder(tmpFolder)
 

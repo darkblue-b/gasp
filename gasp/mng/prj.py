@@ -175,11 +175,11 @@ def project(inShp, outShp, outEPSG, inEPSG=None, gisApi='ogr', sql=None):
         from gasp.prop.ff import drv_name
         
         cmd = (
-            'ogr2ogr -f "{}" {} {}{} -s_srs EPSG:{} -t_srs:{}'
+            'ogr2ogr -f "{}" {} {}{} -s_srs EPSG:{} -t_srs EPSG:{}'
         ).format(
             drv_name(outShp), outShp, inShp,
             '' if not sql else ' -dialect sqlite -sql "{}"'.format(sql),
-            str(inEpsg), str(outEpsg)
+            str(inEPSG), str(outEPSG)
         )
         
         outcmd = exec_cmd(cmd)
@@ -244,7 +244,7 @@ def set_proj(rst, epsg):
     img.FlushCache()
 
 
-def gdal_reproject_raster(inRst, outRst, inEPSG, outEPSG):
+def gdal_reproject_raster(inRst, outRst, inEPSG, outEPSG, cellsize=10):
     """
     Reproject Raster dataset using gdalwarp
     """
@@ -254,10 +254,10 @@ def gdal_reproject_raster(inRst, outRst, inEPSG, outEPSG):
     
     cmd = (
         'gdalwarp -overwrite {inrst} {outrst} -s_srs EPSG:{inepsg} '
-        '-t_srs EPSG:{outepsg}'
+        '-t_srs EPSG:{outepsg} -tr {cs} {cs}'
     ).format(
         inrst=inRst, inepsg=inEPSG,
-        outrst=outRst, outepsg=outEPSG
+        outrst=outRst, outepsg=outEPSG, cs=cellsize
     )
     
     codecmd = exec_cmd(cmd)

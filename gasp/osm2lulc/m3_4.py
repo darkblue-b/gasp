@@ -179,7 +179,7 @@ def num_selbyarea(osmLink, polyTbl, folder, cellsize, srscode, rstTemplate,
         rst = shp_to_raster(
             shpCls, None, cellsize, 0, os.path.join(
                 folder, "{}_{}.tif".format(RULE_COL, CLS)
-            ), epg=srscode, rst_template=rstTemplate, api='gdal'
+            ), epsg=srscode, rst_template=rstTemplate, api='gdal'
         )
         time_z = datetime.datetime.now().replace(microsecond=0)
         
@@ -196,64 +196,6 @@ def num_selbyarea(osmLink, polyTbl, folder, cellsize, srscode, rstTemplate,
     for t in thrds: t.join()
     
     return clsRst, timeGasto
-
-
-def arcg_area(polyTbl, lulcNomenclature, UPPER=True):
-    """
-    Select Features with area upper than
-    """
-    
-    from gasp.osm2lulc.utils     import osm_features_by_rule
-    from gasp.cpu.arcg.anls.exct import select_by_attr
-    from gasp.cpu.arcg.mng.fld   import add_geom_attr
-    from gasp.cpu.arcg.mng.gen   import delete
-    from gasp.mng.genze          import dissolve
-    from gasp.prop.feat          import feat_count
-    
-    KEY_COL   = DB_SCHEMA["OSM_FEATURES"]["OSM_KEY"]
-    VALUE_COL = DB_SCHEMA["OSM_FEATURES"]["OSM_VALUE"]
-    LULC_COL  = DB_SCHEMA[lulcNomenclature]["CLS_FK"]
-    RULE_COL  = DB_SCHEMA[lulcNomenclature]["RULES_FIELDS"]["AREA"]
-    
-    # Get OSM Features to be selected for this rule
-    __serv = 'area_upper' if UPPER else 'area_lower'
-    osmToSelect = osm_features_by_rule(lulcNomenclature, __serv)
-    
-    operator = " > " if UPPER else " < "
-    osmToSelect[VALUE_COL] = "(" + osmToSelect[KEY_COL] + "='" + \
-        osmToSelect[VALUE_COL] + "' AND shp_area" + operator + \
-        osmToSelect[RULE_COL].astype(str) + ")"
-    
-    lulcCls = osmToSelect[LULC_COL].unique()
-    
-    clsVect = {}
-    WORK = os.path.dirname(polyTbl)
-    
-    for cls in lulcCls:
-        # Select and Export
-        filterDf = osmToSelect[osmToSelect[LULC_COL] == cls]
-        
-        fShp = select_by_attr(
-            polyTbl, 
-            str(filterDf[VALUE_COL].str.cat(sep=" OR ")),
-            os.path.join(WORK, "{}_{}".format(__serv, str(cls)))
-        )
-        
-        if not feat_count(fShp, gisApi='arcpy'): continue
-        
-        # Dissolve
-        dissShp = dissolve(
-            fShp, os.path.join(WORK, "{}_d_{}".format(__serv, str(cls))),
-            "OBJECTID", geomMultiPart=None, api='arcpy'
-        )
-        
-        if not feat_count(dissShp, gisApi='arcpy'): continue
-        
-        clsVect[int(cls)] = dissShp
-        
-        delete(fShp)
-    
-    return clsVect
 
 
 def sel_by_dist_to_pop():

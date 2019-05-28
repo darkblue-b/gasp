@@ -423,7 +423,7 @@ def rst_stats(rst, bnd=None, api='gdal'):
 Raster Spatial Reference Systems
 """
 
-def get_epsg_raster(rst):
+def get_epsg_raster(rst, returnIsProj=None):
     """
     Return the EPSG Code of the Spatial Reference System of a Raster
     """
@@ -434,5 +434,23 @@ def get_epsg_raster(rst):
     d    = gdal.Open(rst)
     proj = osr.SpatialReference(wkt=d.GetProjection())
     
-    return int(proj.GetAttrValue('AUTHORITY', 1))
+    if not proj:
+        raise ValueError(
+            '{} file has not Spatial Reference assigned!'.format(rst)
+        )
+    
+    epsg = int(str(proj.GetAttrValue(str('AUTHORITY'), 1)))
+    
+    if not returnIsProj:
+        return epsg
+    else:
+        if proj.IsProjected:
+            mod_proj = proj.GetAttrValue(str('projcs'))
+            
+            if not mod_proj:
+                return epsg, None
+            else:
+                return epsg, True
+        else:
+            return epsg, None
 
