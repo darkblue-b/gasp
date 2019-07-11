@@ -64,57 +64,6 @@ def sqlite_insert_query(db, table, cols, new_values, execute_many=None):
     conn.close()
 
 
-def df_to_db(conParam, df, table, append=None, api='psql'):
-    """
-    Pandas Dataframe to PGSQL table
-    
-    API options:
-    * psql;
-    * sqlite
-    """
-    
-    if api != 'psql' and api != 'sqlite':
-        raise ValueError('API {} is not available'.format(api))
-    
-    from gasp.sql.c import alchemy_engine
-    
-    pgengine = alchemy_engine(conParam, api=api)
-    
-    df.to_sql(
-        table, pgengine,
-        if_exists='replace' if not append else 'append',
-        index=False
-    )
-    
-    return table
-
-
-def geodf_to_psql(conParam, df, pgtable, epsg, geomType,
-                  colGeom="geometry", isAppend=None):
-    """
-    Pandas GeoDataframe to PGSQL table
-    """
-    
-    from geoalchemy2 import Geometry, WKTElement
-    from gasp.sql.c  import alchemy_engine
-    
-    pgengine = alchemy_engine(conParam, api='psql')
-    
-    df["geom"] = df[colGeom].apply(
-        lambda x: WKTElement(x.wkt, srid=epsg)
-    )
-    
-    if colGeom != 'geom':
-        df.drop(colGeom, axis=1, inplace=True)
-    
-    df.to_sql(
-        pgtable, pgengine, if_exists='replace' if not isAppend else 'append',
-        index=False, dtype={'geom' : Geometry(geomType, srid=epsg)}
-    )
-    
-    return pgtable
-
-
 def db_to_db(conDBA, conDBB, typeDBA, typeDBB):
     """
     All tables in one Database to other database

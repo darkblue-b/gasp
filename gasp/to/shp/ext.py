@@ -6,51 +6,6 @@ from osgeo        import ogr
 from gasp.prop.ff import drv_name
 
 
-def coords_to_boundary(topLeft, lowerRight, epsg, outshp):
-    """
-    Top Left and Lower Right to Boundary
-    """
-    
-    import os
-    from gasp.oss      import get_filename
-    from gasp.prop.prj import get_sref_from_epsg
-    
-    boundary_points = [
-        (   topLeft[0],    topLeft[1]),
-        (lowerRight[0],    topLeft[1]),
-        (lowerRight[0], lowerRight[1]),
-        (   topLeft[0], lowerRight[1]),
-        (   topLeft[0],    topLeft[1])
-    ]
-    
-    shp = ogr.GetDriverByName(
-        drv_name(outshp)).CreateDataSource(outshp)
-    
-    lyr = shp.CreateLayer(
-        get_filename(outshp), get_sref_from_epsg(epsg),
-        geom_type=ogr.wkbPolygon
-    )
-    
-    outDefn = lyr.GetLayerDefn()
-    
-    feat = ogr.Feature(outDefn)
-    ring = ogr.Geometry(ogr.wkbLinearRing)
-    
-    for pnt in boundary_points:
-        ring.AddPoint(pnt[0], pnt[1])
-    
-    polygon = ogr.Geometry(ogr.wkbPolygon)
-    polygon.AddGeometry(ring)
-    
-    feat.SetGeometry(polygon)
-    lyr.CreateFeature(feat)
-    
-    feat.Destroy()
-    shp.Destroy()
-    
-    return outshp
-
-
 def shpext_to_boundary(inShp, outShp, epsg=None):
     """
     Read one feature class extent and create a boundary with that

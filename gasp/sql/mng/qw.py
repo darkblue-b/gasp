@@ -3,55 +3,6 @@ Write new tables or edit tables in Database
 """
 
 
-def ntbl_by_query(lnk, outbl, query, ntblIsView=None, api='psql'):
-    """
-    Create table by query
-    
-    API's Available:
-    * psql;
-    * ogr2ogr
-    """
-    
-    if api == 'psql':
-        from gasp.sql.c import psqlcon
-    
-        con = psqlcon(lnk)
-    
-        curs = con.cursor()
-    
-        _q = "CREATE {} {} AS {}".format(
-            "TABLE" if not ntblIsView else "VIEW",
-            outbl, query
-        )
-    
-        curs.execute(_q)
-    
-        con.commit()
-        curs.close()
-        con.close()
-    
-    elif api == 'ogr2ogr':
-        """
-        Execute a SQL Query in a SQLITE Database and store the result in the
-        same database. Uses OGR2OGR instead of the regular SQLITE API
-        """
-        
-        from gasp import exec_cmd
-        
-        cmd = (
-            'ogr2ogr -update -append -f "SQLite" {db} -nln "{nt}" '
-            '-dialect sqlite -sql "{q}" {db}' 
-        ).format(
-             db=lnk, nt=outbl, q=query
-        )
-        
-        outcmd = exec_cmd(cmd)
-    
-    else:
-        raise ValueError('API {} is not available!'.format(api))
-    
-    return outbl
-
 def update_table(con_pgsql, pg_table, dic_new_values, dic_ref_values=None, 
                  logic_operator='OR'):
     """

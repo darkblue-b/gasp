@@ -8,32 +8,6 @@ GRASS GIS Tools for table management
 from grass.pygrass.modules import Module
 
 
-def add_field(shp, fld, fld_type, lyrN=1, ascmd=None):
-    """
-    fld_type options:
-    * VARCHAR()
-    * INT
-    * DOUBLE PRECISION
-    * DATE
-    """
-    
-    if not ascmd:
-        c = Module(
-            "v.db.addcolumn", map=shp, layer=lyrN,
-            columns='{} {}'.format(fld, fld_type),
-            run_=False, quiet=True
-        )
-    
-        c()
-    
-    else:
-        from gasp import exec_cmd
-        
-        rcmd = exec_cmd((
-            "v.db.addcolumn map={} layer={} columns=\"{} {}\" --quiet"
-        ).format(shp, lyrN, fld, fld_type))
-
-
 def update_table(shp, col, v, onde, lyrN=1, ascmd=None):
     """
     Update Table

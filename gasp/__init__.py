@@ -2,70 +2,6 @@
 GASP Python Package
 """
 
-def __import(full_path):
-    """
-    For 'gasp.apis.module', return the 'module' object
-    """
-    
-    components = full_path.split('.')
-    mod = __import__(components[0])
-    
-    for comp in components[1:]:
-        mod = getattr(mod, comp)
-    
-    return mod
-
-
-def exec_cmd(cmd):
-    """
-    Execute a command and provide information about the results
-    """
-    import subprocess
-    
-    p = subprocess.Popen(cmd, shell=True,
-                         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    
-    out, err = p.communicate()
-    
-    if p.returncode != 0:
-        raise ValueError(
-            'Output: {o}\nError: {e}'.format(o=str(out), e=str(err))
-        )
-    
-    else:
-        return out
-
-
-def goToList(obj):
-    """
-    A method uses a list but the user gives a str
-    
-    This method will see if the object is a str and convert it to a list
-    """
-    
-    return [obj] if type(obj) == str or type(obj) == unicode else \
-           obj if type(obj) == list else None
-
-
-def random_str(char_number, all_char=None):
-    """
-    Generates a random string with numbers and characters
-    """
-    
-    import random as r
-    import string
-    
-    char = string.digits + string.ascii_letters
-    if all_char:
-        char += string.punctuation
-    
-    rnd = ''
-    
-    for i in range(char_number): rnd += r.choice(char)
-    
-    return rnd
-
-
 """
 Compress files with Python
 """
@@ -114,79 +50,8 @@ def zip_folder(folder, zip_file):
 
 
 """
-Operations with colors
-"""
-
-def hex_to_rgb(value):
-    """Return (red, green, blue) for the color given as #rrggbb."""
-    value = value.lstrip('#')
-    lv = len(value)
-    return tuple(
-        int(value[i:i + lv // 3], 16) for i in range(0, lv, lv // 3)
-    )
-
-
-def rgb_to_hex(red, green, blue):
-    """Return color as #rrggbb for the given color values."""
-    return '#%02x%02x%02x' % (red, green, blue)
-
-
-def idcolor_to_hex(rgbObj):
-    """
-    Find RGB in rgbObj and convert RGB to HEX
-    """
-    
-    if type(rgbObj) == tuple or type(rgbObj) == list:
-        _hex = rgb_to_hex(rgbObj[0], rgbObj[1], rgbObj[2])
-    
-    elif type(rgbObj) == dict:
-        R = 'R' if 'R' in rgbObj else 'r' if 'r' in rgbObj else \
-            None
-        G = 'G' if 'G' in rgbObj else 'g' if 'g' in rgbObj else \
-            None
-        B = 'B' if 'B' in rgbObj else 'b' if 'b' in rgbObj else \
-            None
-        
-        if not R or not G or not B:
-            raise ValueError(
-                ('rgbObj Value is not valid'
-                 'You are using a dict to specify the color related with'
-                 'each attribute categorie, but you are not using R, G and B'
-                 ' as keys. Please use a dict with the following structure: '
-                    '{\'R\': 255, \'R\': 255, \'R\': 255}'
-                )
-            )
-        else:
-            _hex = rgb_to_hex(rgbObj[R], rgbObj[G], rgbObj[B])
-    
-    elif type(rgbObj) == str or type(rgbObj) == unicode:
-        _hex = rgbObj
-    
-    else:
-        raise ValueError('rgbObj value is not valid')
-    
-    return _hex
-
-
-"""
 Datetime Objects Management
 """
-
-def now_as_int():
-    """
-    Return Datetime.now as integer
-    """
-    
-    import datetime
-    
-    _now = str(datetime.datetime.now())
-    
-    _now = _now.replace('-', '')
-    _now = _now.replace(' ', '')
-    _now = _now.replace(':', '')
-    _now = _now.split('.')[0]
-    
-    return long(_now)
 
 
 def day_to_intervals(interval_period):
@@ -274,19 +139,6 @@ def day_to_intervals2(intervaltime):
     PERIODS[-1] = (PERIODS[-1][0], '23:59:59')
     
     return PERIODS
-
-"""
-Methods to deal with encoding problems
-"""
-
-def unicode_to_str(obj):
-    """
-    Transforms a unicode string into a regular string
-    """
-    
-    import unicodedata
-    
-    return unicodedata.normalize('NFKD', obj).encode('ascii', 'ignore')
 
 
 """

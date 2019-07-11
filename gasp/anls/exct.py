@@ -5,36 +5,6 @@ from __future__ import unicode_literals
 Tools for data extraction
 """
 
-def get_geom_by_index(inShp, idx):
-    """
-    Get Geometry by index in file
-    """
-    
-    from osgeo        import ogr
-    from gasp.prop.ff import drv_name
-    
-    src = ogr.GetDriverByName(drv_name(inShp)).Open(inShp)
-    lyr = src.GetLayer()
-    
-    c = 0
-    geom = None
-    for f in lyr:
-        if idx == c:
-            geom = f.GetGeometryRef()
-        
-        else:
-            c += 1
-    
-    if not geom:
-        raise ValueError("inShp has not idx")
-    
-    _geom = geom.ExportToWkt()
-    
-    del lyr
-    src.Destroy()
-    
-    return _geom
-
 
 def sel_by_attr(inShp, sql, outShp, geomType="area", lyrN=1, api_gis='ogr'):
     """

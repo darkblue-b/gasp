@@ -2,26 +2,6 @@
 Processing Raster data with GDAL
 """
 
-def clip_rst(raster, clipShp, outRst, nodataValue=None):
-    """
-    Clip Raster using GDAL WARP
-    """
-    
-    from gasp         import exec_cmd
-    from gasp.prop.ff import drv_name
-    
-    outcmd = exec_cmd((
-        "gdalwarp {ndata}-cutline {clipshp} -crop_to_cutline "
-        "-of {ext} {inraster} -overwrite {outrst}"
-    ).format(
-        clipshp=clipShp, inraster=raster, outrst=outRst,
-        ext=drv_name(outRst),
-        ndata="-dstnodata {} ".format(
-            str(nodataValue)) if nodataValue else ""
-    ))
-    
-    return outRst
-
 
 def raster_rotation(inFolder, template, outFolder, img_format='.tif'):
     """

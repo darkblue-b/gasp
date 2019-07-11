@@ -6,35 +6,6 @@ from __future__ import unicode_literals
 Get Raster properties
 """
 
-def get_nodata(r, gisApi='gdal'):
-    """
-    Returns the value defining NoData in a Raster file
-    
-    API'S Available:
-    * gdal;
-    * arcpy;
-    """
-    
-    if gisApi == 'gdal':
-        from osgeo import gdal
-        
-        img = gdal.Open(r)
-        band = img.GetRasterBand(1)
-        
-        ndVal = band.GetNoDataValue()
-    
-    elif gisApi == 'arcpy':
-        import arcpy
-        
-        desc = arcpy.Describe(r)
-        
-        ndVal = desc.noDataValue
-    
-    else:
-        raise ValueError('The api {} is not available'.format(gisApi))
-    
-    return ndVal
-
 
 def rst_shape(rst, gisApi='gdal'):
     """
@@ -417,40 +388,4 @@ def rst_stats(rst, bnd=None, api='gdal'):
         raise ValueError('Sorry, API {} is not available'.format(gisApi))
     
     return dicStats
-
-
-"""
-Raster Spatial Reference Systems
-"""
-
-def get_epsg_raster(rst, returnIsProj=None):
-    """
-    Return the EPSG Code of the Spatial Reference System of a Raster
-    """
-    
-    from osgeo import gdal
-    from osgeo import osr
-    
-    d    = gdal.Open(rst)
-    proj = osr.SpatialReference(wkt=d.GetProjection())
-    
-    if not proj:
-        raise ValueError(
-            '{} file has not Spatial Reference assigned!'.format(rst)
-        )
-    
-    epsg = int(str(proj.GetAttrValue(str('AUTHORITY'), 1)))
-    
-    if not returnIsProj:
-        return epsg
-    else:
-        if proj.IsProjected:
-            mod_proj = proj.GetAttrValue(str('projcs'))
-            
-            if not mod_proj:
-                return epsg, None
-            else:
-                return epsg, True
-        else:
-            return epsg, None
 

@@ -20,35 +20,6 @@ def json_fm_httpget(url):
     return json_data
 
 
-def get_file_ul(url, output):
-    """
-    Return a file from the web and save it somewhere
-    """
-    
-    import urllib
-    
-    data_file = urllib.URLopener()
-    
-    data_file.retrieve(url, output)
-    
-    return output
-
-
-def get_file(url, output):
-    """
-    Save content of url
-    """
-    
-    import requests
-    
-    r = requests.get(url, allow_redirects=True)
-    
-    with open(output, 'wb') as f:
-        f.write(r.content)
-    
-    return output
-
-
 def data_from_get(url, getParams):
     """
     Return json from URL - GEST Request

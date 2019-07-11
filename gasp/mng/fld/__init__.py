@@ -87,35 +87,6 @@ def ogrFieldsDefn_from_pandasdf(df):
 Info
 """
 
-def lst_fld(shp):
-    """
-    Return a list with every field name in a vectorial layer
-    """
-    
-    if type(shp) == ogr.Layer:
-        lyr = shp
-        c=0
-    
-    else:
-        data = ogr.GetDriverByName(
-            drv_name(shp)).Open(shp, 0)
-    
-        lyr = data.GetLayer()
-        c= 1
-    
-    defn = lyr.GetLayerDefn()
-    
-    fields = []
-    for i in range(0, defn.GetFieldCount()):
-        fdefn = defn.GetFieldDefn(i)
-        fields.append(fdefn.name)
-    
-    if c:
-        del lyr
-        data.Destroy()
-    
-    return fields
-
 def ogr_list_fields_defn(shp):
     """
     Return a dict with the field name as key and the field definition as value
@@ -200,28 +171,6 @@ def rename_column(inShp, columns, output, api="ogr2ogr"):
     return outShp
 
 
-def ogr_copy_fields(inLyr, outLyr, __filter=None):
-    
-    if __filter:
-        __filter = [__filter] if type(__filter) != list else __filter
-    
-    inDefn = inLyr.GetLayerDefn()
-    
-    for i in range(0, inDefn.GetFieldCount()):
-        fDefn = inDefn.GetFieldDefn(i)
-        
-        if __filter:
-            if fDefn.name in __filter:
-                outLyr.CreateField(fDefn)
-            
-            else:
-                continue
-        
-        else:
-            outLyr.CreateField(fDefn)
-    
-    del inDefn, fDefn
-
 def add_fields(table, fields):
     """
     Receive a feature class and a dict with the field name and type
@@ -272,29 +221,7 @@ def add_fields_to_tables(inFolder, fields, tbl_format='.shp'):
         add_fields(table, fields)
 
 
-def add_fields_sqldialect(table, fields):
-    """
-    Add fields to table using SQL dialect
-    """
-    
-    import os
-    from gasp import exec_cmd
-    
-    tbl_name = os.path.splitext(os.path.basename(table))[0]
-    
-    if type(fields) != dict:
-        raise ValueError('Fields argument should be a dict')
-    
-    ogrinfo = 'ogrinfo {i} -sql "{s}"'
-    
-    for fld in fields:
-        sql = 'ALTER TABLE {tableName} ADD COLUMN {col} {_type};'.format(
-            tableName = tbl_name, col=fld, _type=fields[fld]
-        )
-        
-        outcmd = exec_cmd(ogrinfo.format(
-            i=table, s=sql
-        ))
+
 
 
 def summarize_table_fields(table, outFld, fld_name_fld_name=None,
@@ -329,39 +256,7 @@ def summarize_table_fields(table, outFld, fld_name_fld_name=None,
             )
         ))
 
-def update_table(table, new_values, ref_values=None):
-    """
-    Update a feature class table with new values
-    
-    Where with OR condition
-    new_values and ref_values are dict with fields as keys and values as 
-    keys values.
-    """
-    
-    from gasp import exec_cmd
-    
-    if ref_values:
-        update_query = 'UPDATE {tbl} SET {pair_new} WHERE {pair_ref};'.format(
-            tbl=os.path.splitext(os.path.basename(table))[0],
-            pair_new=','.join(["{fld}={v}".format(
-                fld=x, v=new_values[x]) for x in new_values]),
-            pair_ref=' OR '.join(["{fld}='{v}'".format(
-                fld=x, v=ref_values[x]) for x in ref_values])
-        )
-    
-    else:
-        update_query = 'UPDATE {tbl} SET {pair};'.format(
-            tbl=os.path.splitext(os.path.basename(table))[0],
-            pair=','.join(["{fld}={v}".format(
-                fld=x, v=new_values[x]) for x in new_values])
-        )
-    
-    ogrinfo = 'ogrinfo {i} -dialect sqlite -sql "{s}"'.format(
-        i=table, s=update_query
-    )
-    
-    # Run command
-    outcmd = exec_cmd(ogrinfo)
+
 
 def add_filename_to_field(tables, new_field, table_format='.dbf'):
     """
